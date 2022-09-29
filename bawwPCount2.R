@@ -1,4 +1,3 @@
-setwd("D:/data")
 library(unmarked) #pcount() for year-stacked, binomial N-mixture models
 library(MuMIn) #dredge
 library(AICcmodavg) #aictab() for AICc model comparisons
@@ -13,14 +12,14 @@ citation(package = "unmarked")
 
 #FULL DATASET####
 
-#Year-stacked dataframe 
+#Year-stacked dataframe
 SI.df <- read.csv("BAWWpcount_noBaseline.csv", h=T)
 head(SI.df)
 
 #Summary stats
 sum(SI.df$totals[SI.df$site == "SGL" & SI.df$treat == "Playback"]) #23 @ PB
 sum(SI.df$totals[SI.df$site == "SGL" & SI.df$treat == "Playback"])/
-  sum(SI.df$totals[SI.df$site == "SGL"])*100 # 67% of all obs 
+  sum(SI.df$totals[SI.df$site == "SGL"])*100 # 67% of all obs
 
 sum(SI.df$totals[SI.df$site == "FSS" & SI.df$treat == "Playback"]) #32 @ PB
 sum(SI.df$totals[SI.df$site == "FSS" & SI.df$treat == "Playback"])/
@@ -49,11 +48,11 @@ year <- SI.df$year
 medUv <- SI.df$median/100 #divide by 100 to scale to counts
 
 
-#?unmarkedFramePCount() 
-ufPC <- unmarkedFramePCount(y = count, siteCovs = data.frame(treat = treat, 
+#?unmarkedFramePCount()
+ufPC <- unmarkedFramePCount(y = count, siteCovs = data.frame(treat = treat,
                                                              uv = uv,
-                                                             medUv = medUv,  
-                                                             site = site, 
+                                                             medUv = medUv,
+                                                             site = site,
                                                              year = year),
                               obsCovs = list(season = season))
 head(ufPC)
@@ -64,12 +63,12 @@ m0 <- pcount(~1 ~1, data = ufPC, mixture = "P", K = 102, se = TRUE) #Null model
 m0.5 <- pcount(~1 ~site, data = ufPC, mixture = "P", K = 102, se = TRUE)
 m0.7 <- pcount(~site ~1, data = ufPC, mixture = "P", K = 102, se = TRUE)
 
-#Model selection using aictab() for AICc (corrected for small sample sizes) 
-#Null model (intercept only) vs. Study area detection model 
+#Model selection using aictab() for AICc (corrected for small sample sizes)
+#Null model (intercept only) vs. Study area detection model
 nullModels <- list(m0, m0.5, m0.7)
 nullModnames <- c("m0","m0.5","m0.7")
-aictab(cand.set = nullModels,modnames = nullModnames, sort = TRUE) 
-modSel(fitList(m0=m0,m0.5=m0.5, m0.7=m0.7)) 
+aictab(cand.set = nullModels,modnames = nullModnames, sort = TRUE)
+modSel(fitList(m0=m0,m0.5=m0.5, m0.7=m0.7))
 
 
 
@@ -133,7 +132,7 @@ sglM8 <- pcount(~1 ~sglMax, data = sglUPC, mixture = "P", K = 102, se = TRUE)
 sglM1a <- pcount(~sglUv ~1, data = sglUPC, mixture = "P", K = 102, se = TRUE)
 sglM2a <- pcount(~sglMed ~1, data = sglUPC, mixture = "P", K = 102, se = TRUE)
 
-#Curvlinear quadratic term fits nominally-better here but not so in treatment models, 
+#Curvlinear quadratic term fits nominally-better here but not so in treatment models,
 #so we'll stick with the linear term
 sglM3a <- pcount(~I(sglMed^2) ~1, data = sglUPC, mixture = "P", K = 102, se = TRUE)
 sglM3a
@@ -152,15 +151,15 @@ gof.v <- Nmix.gof.test(sglM2a, nsim = 1000)
 gof.v
 
 # Chi-square goodness-of-fit for N-mixture model of 'unmarkedFitPCount' class
-# 
-# Observed chi-square statistic = 155.6269 
+#
+# Observed chi-square statistic = 155.6269
 # Number of bootstrap samples = 1000
 # P-value = 0.998
-# 
+#
 # Quantiles of bootstrapped statistics:
-#   0%  25%  50%  75% 100% 
-# 149  192  205  220  312 
-# 
+#   0%  25%  50%  75% 100%
+# 149  192  205  220  312
+#
 # Estimate of c-hat = 0.75
 
 
@@ -192,14 +191,14 @@ for (b in 1:simrep) {
   #Repeat data preparation with bootstrap sample
   sglC <- as.matrix(sglCount[bs.veg.samp,])
   sglMedBs <- sglMed[bs.veg.samp]
-  
-  
+
+
   #Create new unmarked data frame and fit model to bootstrapped data set
-  sglUPCBs <- unmarkedFramePCount(y = sglC, 
+  sglUPCBs <- unmarkedFramePCount(y = sglC,
                              siteCovs = data.frame(sglMedBs = sglMedBs))
   bs.sglM2 <- pcount(~1 ~sglMedBs, data = sglUPCBs, mixture = "P", K = 102, se = TRUE)
   vegBs.esti[,b] <- coef(bs.sglM2)
-} 
+}
 
 bs.sglM2
 
@@ -218,17 +217,17 @@ se.sgl.bs <- apply(vegBs.esti.df[,-1], 1, sd)
 #Conf Intervals
 ci.sgl.bs <- t(apply(vegBs.esti.df[,-1], 1, function(x)quantile(x, c(0.025, 0.975))))
 #CI length
-cil.sgl.bs <- abs(ci.sgl.bs[,2] - ci.sgl.bs[,1]) 
+cil.sgl.bs <- abs(ci.sgl.bs[,2] - ci.sgl.bs[,1])
 
 #m7 results for comparison
 tmp.sgl <- summary(sglM2)
-se.sgl <- c(tmp.sgl$state$SE, tmp.sgl$det$SE, tmp.sgl$alpha$SE) 
-ci.sgl <- rbind(confint(sglM2, type = "state"), confint(sglM2, type = "det")) 
+se.sgl <- c(tmp.sgl$state$SE, tmp.sgl$det$SE, tmp.sgl$alpha$SE)
+ci.sgl <- rbind(confint(sglM2, type = "state"), confint(sglM2, type = "det"))
 cil.sgl <- abs(ci.sgl[,2] - ci.sgl[,1])
 
-#Compare nominal and bootstrapped SE/CI/CI length 
-print(cbind("Nominal SE" = se.sgl, ci.sgl), digits = 2) 
-print(cbind("Boot Est" = sglMeanEst, se.sgl.bs, ci.sgl.bs, "se/se.bs ratio (%)" = round(100*(se.sgl/se.sgl.bs),0), 
+#Compare nominal and bootstrapped SE/CI/CI length
+print(cbind("Nominal SE" = se.sgl, ci.sgl), digits = 2)
+print(cbind("Boot Est" = sglMeanEst, se.sgl.bs, ci.sgl.bs, "se/se.bs ratio (%)" = round(100*(se.sgl/se.sgl.bs),0),
             "cil/cil.bs ratio (%)" = round(100*(cil.sgl/cil.sgl.bs),0)), digits = 2)
 
 #What percent of the BS SE & CI does the nominal model cover
@@ -252,7 +251,7 @@ boot_pz(lamMedUvVeg)
 boot_ci()
 
 #VEG MODEL PREDICTIONS####
-#Predicted Detection based on sglM2a 
+#Predicted Detection based on sglM2a
 predAbdVeg <- predict(sglM2, type = "state")
 predAbdVeg
 
@@ -288,8 +287,8 @@ abdMedUvPlot
 #PLOT--Summed raw counts by understory vegetation####
 rawSumsSglPlot <- ggplot(data = sglVeg.df)+
   geom_point(aes(x=median,y=sums))+
-  stat_smooth(aes(x=median,y=sums),method="glm", 
-              method.args=list(family="poisson"), 
+  stat_smooth(aes(x=median,y=sums),method="glm",
+              method.args=list(family="poisson"),
               linetype = c("solid"), colour = "black",alpha = .5)+
   xlab("Median understory vegetation cover (%)")+
   ylab("Summed counts")+
@@ -303,22 +302,22 @@ rawSumsSglPlot <- ggplot(data = sglVeg.df)+
 rawSumsSglPlot
 
 #BAWWUvPlots wrap####
-annotate_figure(ggarrange(abdMedUvPlot,rawSumsSglPlot,ncol = 2, labels = c("A","B")), 
+annotate_figure(ggarrange(abdMedUvPlot,rawSumsSglPlot,ncol = 2, labels = c("A","B")),
                 bottom = text_grob("Median understory vegetation cover (%)", size = 20))
 
 
 #get bs estimates matrix
 sglMdlEst <- as.data.frame(cbind(sglMeanEst, se.sgl.bs, ci.sgl.bs))
 #make dataframe for plot
-sglM2aPlot.df <- data.frame(params=c("Abundance model  intercept", 
-                                     "Detection model  intercept", 
+sglM2aPlot.df <- data.frame(params=c("Abundance model  intercept",
+                                     "Detection model  intercept",
                                      "Median understory  vegetation cover"),
-                        meanEst=sglMdlEst$sglMeanEst, 
-                        ci.lo=sglMdlEst$`2.5%`, 
+                        meanEst=sglMdlEst$sglMeanEst,
+                        ci.lo=sglMdlEst$`2.5%`,
                         ci.up=sglMdlEst$`97.5%`)
 #make parameters ordered factor
 sglM2aPlot.df$params <- factor(sglM2aPlot.df$params, levels = rev(sglM2aPlot.df$params))
-sglM2aPlot.df$params 
+sglM2aPlot.df$params
 
 write.csv(sglM2aPlot.df, "bawwPCount_sglM2aPlot")
 sglM2aPlot.df <- read.csv("bawwPCount_sglM2aPlot", h=T)
@@ -362,18 +361,18 @@ preCount <- as.matrix(SI.df[,2:4])
 breCount <- as.matrix(SI.df[,5:6])
 
 #prebreeding unmarked frame
-preUfPC <- unmarkedFramePCount(y = preCount, siteCovs = data.frame(treat = treat, 
+preUfPC <- unmarkedFramePCount(y = preCount, siteCovs = data.frame(treat = treat,
                                                                 uv = uv,
-                                                                medUv = medUv,  
-                                                                site = site, 
+                                                                medUv = medUv,
+                                                                site = site,
                                                                 year = year))
 head(preUfPC)
 
 #breeding unmarked frame
-breUfPC <- unmarkedFramePCount(y = breCount, siteCovs = data.frame(treat = treat, 
+breUfPC <- unmarkedFramePCount(y = breCount, siteCovs = data.frame(treat = treat,
                                                                    uv = uv,
-                                                                   medUv = medUv,  
-                                                                   site = site, 
+                                                                   medUv = medUv,
+                                                                   site = site,
                                                                    year = year))
 head(breUfPC)
 
@@ -410,15 +409,15 @@ crossVal(mdl1val, method = "Kfold")
 crossVal(mdl2val, method = "Kfold")
 
 
-# The RMSE and MAE are measured in the same scale as the predicted values of the response variable, 
-# which in this case, is BAWW abundance. 
-# 
-# Dividing RMSE or MAE by the average value of the predicted response provides a prediction error rate. 
+# The RMSE and MAE are measured in the same scale as the predicted values of the response variable,
+# which in this case, is BAWW abundance.
+#
+# Dividing RMSE or MAE by the average value of the predicted response provides a prediction error rate.
 # The lower the prediction error rate, the better.
 
 #Reference:
-# James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2014. 
-# An Introduction to Statistical Learning: With Applications in R. 
+# James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2014.
+# An Introduction to Statistical Learning: With Applications in R.
 # Springer Publishing Company, Incorporated.
 
 #predicted abundance derived from both pcount models
@@ -426,8 +425,8 @@ mdl1val.pred <- predict(mdl1val, type = "state")
 mdl2val.pred <- predict(mdl2val, type = "state")
 
 #The k-fold root mean square error for both models
-RMSE1 <- 0.4293 
-RMSE2 <- 0.4461 
+RMSE1 <- 0.4293
+RMSE2 <- 0.4461
 
 #Divide RMSE by mean predicted abundance for both models
 RMSE1/mean(mdl1val.pred$Predicted)#0.1484589
@@ -484,15 +483,15 @@ summary(get.models(dd,2)[[1]])
 summary(get.models(dd,3)[[1]])
 
 #TOP PREBREEDING MODEL####
-top.mdl.pre <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC, 
+top.mdl.pre <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC,
        K = 102, mixture = "P", se = TRUE)
 
 #Check fit of probability distribution functions#####
-top.mdl.preP <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC, 
+top.mdl.preP <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC,
                       K = 102, mixture = "P", se = TRUE)
-top.mdl.preNB <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC, 
+top.mdl.preNB <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC,
                    K = 102, mixture = "NB", se = TRUE)
-top.mdl.preZIP <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC, 
+top.mdl.preZIP <- pcount(formula = ~1 ~ medUv + site + treat + 1, data = preUfPC,
                     K = 102, mixture = "ZIP", se = TRUE)
 
 
@@ -508,16 +507,16 @@ gof.pre <- Nmix.gof.test(top.mdl.pre, nsim = 1000)
 gof.pre
 
 # Chi-square goodness-of-fit for N-mixture model of 'unmarkedFitPCount' class
-# 
-# Observed chi-square statistic = 117.6075 
+#
+# Observed chi-square statistic = 117.6075
 # Number of bootstrap samples = 1000
 # P-value = 0.948
-# 
+#
 # Quantiles of bootstrapped statistics:
-#   0%  25%  50%  75% 100% 
-# 71  147  169  198  735 
-# 
-# Estimate of c-hat = 0.66 
+#   0%  25%  50%  75% 100%
+# 71  147  169  198  735
+#
+# Estimate of c-hat = 0.66
 
 
 
@@ -541,16 +540,16 @@ for (b in 1:simrep) {
   pre.medUvBs <- medUv[bs.samp]
   pre.treatBs <- treat[bs.samp]
   pre.siteBs <- site[bs.samp]
-  
+
   #Create new unmarked data frame and fit model to bootstrapped data set
-  pre.umf <- unmarkedFramePCount(y = pre.C, 
-                             siteCovs = data.frame(pre.medUvBs = pre.medUvBs, 
+  pre.umf <- unmarkedFramePCount(y = pre.C,
+                             siteCovs = data.frame(pre.medUvBs = pre.medUvBs,
                                                    pre.treatBs = pre.treatBs,
                                                    pre.siteBs = pre.siteBs))
-  top.mdl.preBs <- pcount(~1 ~pre.medUvBs + pre.siteBs + pre.treatBs +1, 
+  top.mdl.preBs <- pcount(~1 ~pre.medUvBs + pre.siteBs + pre.treatBs +1,
                          data = pre.umf, mixture = "P", K = 102, se = TRUE)
   pre.npbs.esti[,b] <- coef(top.mdl.preBs)
-} 
+}
 
 top.mdl.preBs
 
@@ -588,17 +587,17 @@ pre.se.bs <- apply(pre.npbs.esti.df[,-1], 1, sd)
 #Conf Intervals
 pre.ci.bs <- t(apply(pre.npbs.esti.df[,-1], 1, function(x)quantile(x, c(0.025, 0.975))))
 #CI length
-pre.cil.bs <- abs(pre.ci.bs[,2] - pre.ci.bs[,1]) 
+pre.cil.bs <- abs(pre.ci.bs[,2] - pre.ci.bs[,1])
 
 #m7 results for comparison
 pre.tmp <- summary(top.mdl.pre)
-pre.se <- c(pre.tmp$state$SE, pre.tmp$det$SE, pre.tmp$alpha$SE) 
-pre.ci <- rbind(confint(top.mdl.pre, type = "state"), confint(top.mdl.pre, type = "det")) 
+pre.se <- c(pre.tmp$state$SE, pre.tmp$det$SE, pre.tmp$alpha$SE)
+pre.ci <- rbind(confint(top.mdl.pre, type = "state"), confint(top.mdl.pre, type = "det"))
 pre.cil <- abs(pre.ci[,2] - pre.ci[,1])
 
-#Compare nominal and bootstrapped SE/CI/CI length 
-print(cbind("Nominal SE" = pre.se, pre.ci), digits = 2) 
-print(cbind("Boot Est" = pre.meanEst, pre.se.bs, pre.ci.bs, "se/se.bs ratio (%)" = round(100*(pre.se/pre.se.bs),0), 
+#Compare nominal and bootstrapped SE/CI/CI length
+print(cbind("Nominal SE" = pre.se, pre.ci), digits = 2)
+print(cbind("Boot Est" = pre.meanEst, pre.se.bs, pre.ci.bs, "se/se.bs ratio (%)" = round(100*(pre.se/pre.se.bs),0),
             "cil/cil.bs ratio (%)" = round(100*(pre.cil/pre.cil.bs),0)), digits = 2)
 
 #What percent of the BS SE & CI does the nominal model cover
@@ -628,41 +627,41 @@ pre.pb
 pre.cont <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Control"])
 pre.cont
 
-pre.SglPb <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Playback" & 
+pre.SglPb <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Playback" &
                                              pre.avgPred.df$site=="SGL"])
 pre.SglPb
-pre.SglCont <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Control" & 
+pre.SglCont <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Control" &
                                                pre.avgPred.df$site=="SGL"])
 pre.SglCont
 
-pre.FssPb <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Playback" & 
+pre.FssPb <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Playback" &
                                              pre.avgPred.df$site=="FSS"])
 pre.FssPb
-pre.FssCont <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Control" & 
+pre.FssCont <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Control" &
                                                pre.avgPred.df$site=="FSS"])
 pre.FssCont
 
-pre.BunpPb <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Playback" & 
+pre.BunpPb <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Playback" &
                                               pre.avgPred.df$site=="BUNP"])
 pre.BunpPb
-pre.BunpCont <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Control" & 
+pre.BunpCont <- MeanCI(pre.avgPred.df$predAbd[pre.avgPred.df$treat=="Control" &
                                                 pre.avgPred.df$site=="BUNP"])
 pre.BunpCont
 
 #mean standard errors
-pre.SglPbSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Playback" & 
+pre.SglPbSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Playback" &
                                         pre.avgPred.df$site=="SGL"])
-pre.SglContSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Control" & 
+pre.SglContSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Control" &
                                           pre.avgPred.df$site=="SGL"])
 
-pre.FssPbSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Playback" & 
+pre.FssPbSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Playback" &
                                         pre.avgPred.df$site=="FSS"])
-pre.FssContSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Control" & 
+pre.FssContSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Control" &
                                           pre.avgPred.df$site=="FSS"])
 
-pre.BunpPbSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Playback" & 
+pre.BunpPbSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Playback" &
                                          pre.avgPred.df$site=="BUNP"])
-pre.BunpContSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Control" & 
+pre.BunpContSe <- mean(pre.avgPred.df$se[pre.avgPred.df$treat=="Control" &
                                            pre.avgPred.df$site=="BUNP"])
 
 
@@ -673,7 +672,7 @@ pre.AvgPlot.df$treat <- c("Playback","Control","Playback","Control","Playback","
 pre.AvgPlot.df$se <- c(pre.BunpPbSe,pre.BunpContSe,pre.FssPbSe,pre.FssContSe,pre.SglPbSe,pre.SglContSe)
 
 pre.Abd_treatArea <- ggplot()+
-  geom_pointrange(data = pre.AvgPlot.df, 
+  geom_pointrange(data = pre.AvgPlot.df,
                   mapping = aes(x = treat, y=mean, ymin = mean-se, ymax = mean+se, shape = area),
                   size = 1,
                   position = position_dodge(width = 0.4))+
@@ -681,7 +680,7 @@ pre.Abd_treatArea <- ggplot()+
   xlab("")+
   ggtitle("Prospecting")+
   scale_shape_manual(values = c(0,1,2))+
-  scale_y_continuous(name = expression(""), 
+  scale_y_continuous(name = expression(""),
                      limits = c(-3,20))+
   theme(plot.title = element_text(size = 22),
         axis.text.x = element_text(size = 18),
@@ -699,7 +698,7 @@ suppressWarnings(print(pre.Abd_treatArea))
 #Predicted Abundance (treat and uv effects)
 pre.predAbd <- predict(top.mdl.pre, type = "state")
 pre.predAbd
-#Predicted Detection (site effects) 
+#Predicted Detection (site effects)
 pre.predDet <- predict(top.mdl.pre, type = "det")
 pre.predDet
 #New Dataframe for plotting####
@@ -719,24 +718,24 @@ pre.PbMean
 pre.ContMean <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Control"])
 pre.ContMean
 
-pre.SglPb <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Playback" & 
+pre.SglPb <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Playback" &
                                           pre.plot.df$site=="SGL"])
 pre.SglPb
-pre.SglCont <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Control" & 
+pre.SglCont <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Control" &
                                             pre.plot.df$site=="SGL"])
 pre.SglCont
 
-pre.FssPb <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Playback" & 
+pre.FssPb <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Playback" &
                                           pre.plot.df$site=="FSS"])
 pre.FssPb
-pre.FssCont <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Control" & 
+pre.FssCont <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Control" &
                                             pre.plot.df$site=="FSS"])
 pre.FssCont
 
-pre.BunpPb <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Playback" & 
+pre.BunpPb <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Playback" &
                                            pre.plot.df$site=="BUNP"])
 pre.BunpPb
-pre.BunpCont <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Control" & 
+pre.BunpCont <- MeanCI(pre.plot.df$predAbd[pre.plot.df$treat=="Control" &
                                              pre.plot.df$site=="BUNP"])
 pre.BunpCont
 
@@ -745,9 +744,9 @@ pre.BunpCont
 # pre.treatAreaPlot <- data.frame(rbind(pre.BunpPb,pre.BunpCont,pre.FssPb,pre.FssCont,pre.SglPb,pre.SglCont))
 # pre.treatAreaPlot$area <- c("BUNP","BUNP","FSS","FSS","SGL","SGL")
 # pre.treatAreaPlot$treat <- c("Playback","Control","Playback","Control","Playback","Control")
-# 
+#
 # pre.Abd_treatArea <- ggplot()+
-#   geom_pointrange(data = pre.treatAreaPlot, 
+#   geom_pointrange(data = pre.treatAreaPlot,
 #                   mapping = aes(x = treat, y=mean, ymin = lwr.ci, ymax = upr.ci, shape = area),
 #                   size = 1,
 #                   position = position_dodge(width = 0.2))+
@@ -755,7 +754,7 @@ pre.BunpCont
 #   xlab("")+
 #   ggtitle("Prospecting")+
 #   scale_shape_manual(values = c(0,1,2))+
-#   scale_y_continuous(name = expression(""), 
+#   scale_y_continuous(name = expression(""),
 #                      limits = c(0,13))+
 #   theme(plot.title = element_text(size = 22),
 #         axis.text.x = element_text(size = 18),
@@ -766,11 +765,11 @@ pre.BunpCont
 #         legend.title = element_text(size = 16),
 #         plot.margin = margin(15,15,15,15))
 # suppressWarnings(print(pre.Abd_treatArea))
-# 
-# 
+#
+#
 # pre.treatPlot <- data.frame(rbind(pre.PbMean,pre.ContMean))
 # pre.treatPlot$treat <- c("Playback", "Control")
-# 
+#
 # write.csv(pre.treatPlot, "bawwPCount.pre.treatPlot3")
 # pre.treatPlot <- read.csv("bawwPCount.pre.treatPlot3", h=T)
 
@@ -781,11 +780,11 @@ pre.BunpCont
 #get bs estimates matrix
 pre.mdlEst <- as.data.frame(cbind(pre.meanEst, pre.se.bs, pre.ci.bs))
 #make dataframe for plot
-pre.m7MedPlot.df <- data.frame(params=c("Abundance model  intercept", "Playback", 
+pre.m7MedPlot.df <- data.frame(params=c("Abundance model  intercept", "Playback",
                                         "Median understory  vegetation cover",
                                     "Detection model  intercept", "FSS", "SGL"),
-                               meanEst=pre.mdlEst$pre.meanEst, 
-                           ci.lo=pre.mdlEst$`2.5%`, 
+                               meanEst=pre.mdlEst$pre.meanEst,
+                           ci.lo=pre.mdlEst$`2.5%`,
                            ci.up=pre.mdlEst$`97.5%`)
 
 
@@ -794,12 +793,12 @@ pre.m7MedPlot.df <- read.csv("bawwPCount_pre.m7MedPlot2", h=T)
 
 #plot it
 #make parameters ordered factor
-pre.m7MedPlot.df$params <- c("Abundance model  intercept", "Playback", 
+pre.m7MedPlot.df$params <- c("Abundance model  intercept", "Playback",
                              "Median understory  vegetation cover",
   "BUNP", "FSS", "SGL")
-pre.m7MedPlot.df$params <- factor(pre.m7MedPlot.df$params, 
+pre.m7MedPlot.df$params <- factor(pre.m7MedPlot.df$params,
                                   levels = rev(pre.m7MedPlot.df$params))
- 
+
 
 levels(pre.m7MedPlot.df$params) <- gsub("  ", "\n", levels(pre.m7MedPlot.df$params))
 
@@ -852,13 +851,13 @@ mdlB.sub <- subset(ddB, delta <4)
 model.sel(mdlB.sub)
 
 
-cand1 <- pcount(formula = ~1 ~ site + year + 1, data = breUfPC, K = 102, 
+cand1 <- pcount(formula = ~1 ~ site + year + 1, data = breUfPC, K = 102,
                 mixture = "P", se = TRUE)
 
-cand2 <- pcount(formula = ~1 ~ site + 1, data = breUfPC, K = 102, mixture = "P", 
+cand2 <- pcount(formula = ~1 ~ site + 1, data = breUfPC, K = 102, mixture = "P",
                 se = TRUE)
 
-cand3 <- pcount(formula = ~1 ~ site + treat + year + 1, data = breUfPC, 
+cand3 <- pcount(formula = ~1 ~ site + treat + year + 1, data = breUfPC,
                 K = 102, mixture = "P", se = TRUE)
 
 candset <- model.sel(cand1,cand2,cand3)
@@ -883,15 +882,15 @@ crossVal(bre.mdl1val, method = "Kfold")
 crossVal(bre.mdl2val, method = "Kfold")
 
 
-# The RMSE and MAE are measured in the same scale as the predicted values of the response variable, 
-# which in this case, is BAWW abundance. 
-# 
-# Dividing RMSE or MAE by the average value of the predicted response provides a prediction error rate. 
+# The RMSE and MAE are measured in the same scale as the predicted values of the response variable,
+# which in this case, is BAWW abundance.
+#
+# Dividing RMSE or MAE by the average value of the predicted response provides a prediction error rate.
 # The lower the prediction error rate, the better.
 
 #Reference:
-# James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2014. 
-# An Introduction to Statistical Learning: With Applications in R. 
+# James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2014.
+# An Introduction to Statistical Learning: With Applications in R.
 # Springer Publishing Company, Incorporated.
 
 #predicted abundance derived from both pcount models
@@ -899,8 +898,8 @@ bre.mdl1val.pred <- predict(bre.mdl1val, type = "state")
 bre.mdl2val.pred <- predict(bre.mdl2val, type = "state")
 
 #The k-fold root mean square error for both models
-bre.RMSE1 <- 0.4418 
-bre.RMSE2 <- 0.4312 
+bre.RMSE1 <- 0.4418
+bre.RMSE2 <- 0.4312
 
 #Divide RMSE by mean predicted abundance for both models
 bre.RMSE1/mean(bre.mdl1val.pred$Predicted)#0.4358729
@@ -928,40 +927,40 @@ bre.pb
 bre.cont <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Control"])
 bre.cont
 
-bre.SglPb <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Playback" & 
+bre.SglPb <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Playback" &
                                              bre.avgPred.df$site=="SGL"])
 bre.SglPb
-bre.SglCont <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Control" & 
+bre.SglCont <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Control" &
                                                bre.avgPred.df$site=="SGL"])
 bre.SglCont
 
-bre.FssPb <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Playback" & 
+bre.FssPb <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Playback" &
                                              bre.avgPred.df$site=="FSS"])
 bre.FssPb
-bre.FssCont <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Control" & 
+bre.FssCont <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Control" &
                                                bre.avgPred.df$site=="FSS"])
 bre.FssCont
 
-bre.BunpPb <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Playback" & 
+bre.BunpPb <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Playback" &
                                               bre.avgPred.df$site=="BUNP"])
 bre.BunpPb
-bre.BunpCont <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Control" & 
+bre.BunpCont <- MeanCI(bre.avgPred.df$predAbd[bre.avgPred.df$treat=="Control" &
                                                 bre.avgPred.df$site=="BUNP"])
 bre.BunpCont
 
-bre.SglPbSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Playback" & 
+bre.SglPbSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Playback" &
                                         bre.avgPred.df$site=="SGL"])
-bre.SglContSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Control" & 
+bre.SglContSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Control" &
                                           bre.avgPred.df$site=="SGL"])
 
-bre.FssPbSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Playback" & 
+bre.FssPbSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Playback" &
                                         bre.avgPred.df$site=="FSS"])
-bre.FssContSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Control" & 
+bre.FssContSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Control" &
                                           bre.avgPred.df$site=="FSS"])
 
-bre.BunpPbSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Playback" & 
+bre.BunpPbSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Playback" &
                                         bre.avgPred.df$site=="BUNP"])
-bre.BunpContSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Control" & 
+bre.BunpContSe <- mean(bre.avgPred.df$se[bre.avgPred.df$treat=="Control" &
                                           bre.avgPred.df$site=="BUNP"])
 
 #dataframe for plotting
@@ -970,14 +969,14 @@ bre.AvgPlot.df$area <- c("BUNP","BUNP","FSS","FSS","SGL","SGL")
 bre.AvgPlot.df$treat <- c("Playback","Control","Playback","Control","Playback","Control")
 bre.AvgPlot.df$se <- c(bre.BunpPbSe,bre.BunpContSe,bre.FssPbSe,bre.FssContSe,bre.SglPbSe,bre.SglContSe)
 
-bre.Abd_treatArea <- ggplot(data = bre.AvgPlot.df, 
+bre.Abd_treatArea <- ggplot(data = bre.AvgPlot.df,
                   aes(x = treat, y=mean, shape = area))+
   geom_pointrange(aes(ymin = mean-se, ymax = mean+se), size = 1, position = position_dodge(width = 0.4))+
   labs(shape = "Study Area")+
   xlab("")+
   ggtitle("Post-settlement")+
   scale_shape_manual(values = c(0,1,2))+
-  scale_y_continuous(name = expression(""), 
+  scale_y_continuous(name = expression(""),
                      limits = c(-0.5,10))+
   theme(plot.title = element_text(size = 22),
         axis.text.x = element_text(size = 18),
@@ -1032,14 +1031,14 @@ summary(get.models(ddB,3)[[1]])
 summary(get.models(ddB,4)[[1]])
 
 
-bre.top.mdl <- pcount(~1 ~ site + year + 1, data = breUfPC, K = 102, 
+bre.top.mdl <- pcount(~1 ~ site + year + 1, data = breUfPC, K = 102,
                       mixture = "P", se = TRUE)
 bre.top.mdl
 
-bre.top.mdlNB <- pcount(~1 ~ site + year + 1, data = breUfPC, K = 102, 
+bre.top.mdlNB <- pcount(~1 ~ site + year + 1, data = breUfPC, K = 102,
                       mixture = "NB", se = TRUE)
 
-bre.top.mdlZIP <- pcount(~1 ~ site + year + 1, data = breUfPC, K = 102, 
+bre.top.mdlZIP <- pcount(~1 ~ site + year + 1, data = breUfPC, K = 102,
                       mixture = "ZIP", se = TRUE)
 
 #Probability Distribution model selection
@@ -1054,15 +1053,15 @@ gof.bre <- Nmix.gof.test(bre.top.mdl, nsim = 1000)
 gof.bre
 
 # Chi-square goodness-of-fit for N-mixture model of 'unmarkedFitPCount' class
-# 
-# Observed chi-square statistic = 155.9855 
+#
+# Observed chi-square statistic = 155.9855
 # Number of bootstrap samples = 1000
 # P-value = 0.061
-# 
+#
 # Quantiles of bootstrapped statistics:
-#   0%  25%  50%  75% 100% 
-# 35   73   94  114  496 
-# 
+#   0%  25%  50%  75% 100%
+# 35   73   94  114  496
+#
 # Estimate of c-hat = 1.57
 
 
@@ -1088,17 +1087,17 @@ for (b in 1:simrep) {
   bre.treatBs <- treat[bs.samp]
   bre.siteBs <- site[bs.samp]
   bre.yearBs <- year[bs.samp]
-  
+
   #Create new unmarked data frame and fit model to bootstrapped data set
-  bre.umf <- unmarkedFramePCount(y = bre.C, 
-                                 siteCovs = data.frame(bre.medUvBs = bre.medUvBs, 
+  bre.umf <- unmarkedFramePCount(y = bre.C,
+                                 siteCovs = data.frame(bre.medUvBs = bre.medUvBs,
                                                        bre.treatBs = bre.treatBs,
                                                        bre.siteBs = bre.siteBs,
                                                        bre.yearBs = bre.yearBs))
-  bre.top.mdl.bs <- pcount(~1 ~ bre.siteBs + bre.yearBs + 1, 
+  bre.top.mdl.bs <- pcount(~1 ~ bre.siteBs + bre.yearBs + 1,
                          data = bre.umf, mixture = "P", K = 102, se = TRUE)
   bre.npbs.esti[,b] <- coef(bre.top.mdl.bs)
-} 
+}
 
 bre.top.mdl.bs
 
@@ -1135,18 +1134,18 @@ bre.se.bs <- apply(bre.npbs.esti.df[,-1], 1, sd)
 #Conf Intervals
 bre.ci.bs <- t(apply(bre.npbs.esti.df[,-1], 1, function(x)quantile(x, c(0.025, 0.975))))
 #CI length
-bre.cil.bs <- abs(bre.ci.bs[,2] - bre.ci.bs[,1]) 
+bre.cil.bs <- abs(bre.ci.bs[,2] - bre.ci.bs[,1])
 
 #m7 results for comparison
 bre.tmp <- summary(bre.top.mdl)
-bre.se <- c(bre.tmp$state$SE, bre.tmp$det$SE, bre.tmp$alpha$SE) 
-bre.ci <- rbind(confint(bre.top.mdl, type = "state"), confint(bre.top.mdl, type = "det")) 
+bre.se <- c(bre.tmp$state$SE, bre.tmp$det$SE, bre.tmp$alpha$SE)
+bre.ci <- rbind(confint(bre.top.mdl, type = "state"), confint(bre.top.mdl, type = "det"))
 bre.cil <- abs(bre.ci[,2] - bre.ci[,1])
 
-#Compare nominal and bootstrapped SE/CI/CI length 
-print(cbind("Nominal SE" = bre.se, bre.ci), digits = 2) 
-print(cbind("Boot Est" = bre.meanEst, bre.se.bs, bre.ci.bs, 
-            "se/se.bs ratio (%)" = round(100*(bre.se/bre.se.bs),0), 
+#Compare nominal and bootstrapped SE/CI/CI length
+print(cbind("Nominal SE" = bre.se, bre.ci), digits = 2)
+print(cbind("Boot Est" = bre.meanEst, bre.se.bs, bre.ci.bs,
+            "se/se.bs ratio (%)" = round(100*(bre.se/bre.se.bs),0),
             "cil/cil.bs ratio (%)" = round(100*(bre.cil/bre.cil.bs),0)), digits = 2)
 
 #What percent of the BS SE & CI does the nominal model cover
@@ -1165,7 +1164,7 @@ bre.top.mdl
 #Predicted Abundance (treat and uv effects)
 bre.predAbd <- predict(bre.top.mdl, type = "state")
 bre.predAbd
-#Predicted Detection (site effects) 
+#Predicted Detection (site effects)
 bre.predDet <- predict(bre.m7Med, type = "det")
 bre.predDet
 #New dataframe for plotting####
@@ -1191,13 +1190,13 @@ write.csv(bre.treatPlot, "bawwPCount_bre.treatPlot2")
 bre.treatPlot <- read.csv("bawwPCount_bre.treatPlot2", h=T)
 
 bre.Abd_area <- ggplot()+
-  geom_pointrange(data = bre.plot.df, 
+  geom_pointrange(data = bre.plot.df,
                   mapping = aes(x = site, y=predAbd, ymin = predAbdLo, ymax = predAbdUp),
                   size = 1.3,
                   shape = 20)+
   xlab("")+
   ggtitle("Post-settlement")+
-  scale_y_continuous(name = expression(""), 
+  scale_y_continuous(name = expression(""),
                      limits = c(0,9))+
   theme(plot.title = element_text(size = 22),
         axis.text.x = element_text(size = 18),
@@ -1215,11 +1214,11 @@ suppressWarnings(print(bre.Abd_area))
 #get bs estimates matrix
 bre.mdlEst <- as.data.frame(cbind(bre.meanEst, bre.se.bs, bre.ci.bs))
 #make dataframe for plot
-bre.m7MedPlot.df <- data.frame(params=c("Abundance model  intercept", 
+bre.m7MedPlot.df <- data.frame(params=c("Abundance model  intercept",
                                         "Playback", "Median understory  vegetation cover",
                                         "Detection model  intercept", "FSS", "SGL"),
-                               meanEst=bre.mdlEst$bre.meanEst, 
-                               ci.lo=bre.mdlEst$`2.5%`, 
+                               meanEst=bre.mdlEst$bre.meanEst,
+                               ci.lo=bre.mdlEst$`2.5%`,
                                ci.up=bre.mdlEst$`97.5%`)
 
 
@@ -1230,10 +1229,10 @@ bre.m7MedPlot.df <- read.csv("bawwPCount_bre.m7MedPlot2.csv", h=T)
 
 #plot it
 #make parameters ordered factor
-bre.m7MedPlot.df$params <- c("Abundance model  intercept", "Playback", 
+bre.m7MedPlot.df$params <- c("Abundance model  intercept", "Playback",
                              "Median understory  vegetation cover",
                              "BUNP", "FSS", "SGL")
-bre.m7MedPlot.df$params <- factor(bre.m7MedPlot.df$params, 
+bre.m7MedPlot.df$params <- factor(bre.m7MedPlot.df$params,
                                   levels = rev(bre.m7MedPlot.df$params))
 levels(bre.m7MedPlot.df$params) <- gsub("  ", "\n", levels(bre.m7MedPlot.df$params))
 
@@ -1281,18 +1280,18 @@ suppressWarnings(print(annotate_figure(estPlots, bottom = text_grob("           
 
 #Season detection probability plots
 detPlots <- ggarrange(pre.detProb_site,bre.detProb_site)
-detPlots 
+detPlots
 suppressWarnings(print(annotate_figure(detPlots,
-                left = text_grob("Detection probability", 
-                                 size = 22, rot = 90, 
+                left = text_grob("Detection probability",
+                                 size = 22, rot = 90,
                                  face = "bold"))))
 
 #Season predicted abundance plots
 abdPlots <- ggarrange(pre.Abd_treatArea,bre.Abd_treatArea, common.legend = TRUE, legend = "top")
 abdPlots
 suppressWarnings(print(annotate_figure(abdPlots,
-                left = text_grob("Predicted abundance", 
-                                 size = 22, 
+                left = text_grob("Predicted abundance",
+                                 size = 22,
                                  rot = 90))))
 
 
@@ -1322,7 +1321,7 @@ just2017.df <- data.frame(subset(nodum.df, veg.df$year=="z"))
 #uv percent
 just2017.df$uvPercent <- just2017.df$uv*100
 
-#arcsine transform percentages 
+#arcsine transform percentages
 just2017.df$uvArc <- asin(sqrt(just2017.df$uvPercent/100))
 just2017.df$medianArcT <- asin(sqrt(just2017.df$median/100))
 just2017.df$iqr75ArcT <- asin(sqrt(just2017.df$iqr75/100))
@@ -1361,8 +1360,8 @@ summary(tree.df)
 
 #uv median#####
 #for colors add scale_fill_manual(values = c("#FF7F00","#377EB8","#4DAF4A"),
-medianUvBP <- ggplot(data=just2017.df, aes(x=just2017.df$site, 
-                                           y=just2017.df$median, 
+medianUvBP <- ggplot(data=just2017.df, aes(x=just2017.df$site,
+                                           y=just2017.df$median,
                                            fill = just2017.df$site))+
   geom_violin()+
   geom_boxplot(fill = "white", width = 0.1)+
@@ -1433,7 +1432,7 @@ seedNBp <- ggplot(data = tree.df, aes(x = vegSite, y = seedN, fill = vegSite))+
         legend.position = "none",
         text = element_text(family = "Arial"),
         plot.margin = margin(20,20,20,20))+
-  annotate("text", x = as.factor(unique(tree.df$site)), y = c(1795, 1200,1075), 
+  annotate("text", x = as.factor(unique(tree.df$site)), y = c(1795, 1200,1075),
            label = c("B","B","A"), size = 6)
 seedNBp
 
@@ -1447,14 +1446,14 @@ DunnTest(tree.df$seedN, tree.df$site, method = "none")
 sap2.df <- data.frame(read.csv("sapSiteCompare.csv", h=T))
 sap2.df$size <- factor(sap2.df$size, levels = c("sapL1", "sap1.3", "sap3.6", "sap6.10"))
 
-sapLP <- ggplot(sap2.df, aes(x = sap2.df$size, 
+sapLP <- ggplot(sap2.df, aes(x = sap2.df$size,
                              y = sap2.df$mean,
                              group = sap2.df$site,
                              color = sap2.df$site))+
-  
+
   geom_line(position = position_dodge(0.3), size = 1.3)+
   geom_point(position = position_dodge(0.3), size = 3)+
-  geom_errorbar(aes(ymin = sap2.df$mean-sap2.df$sd, ymax = sap2.df$mean+sap2.df$sd), 
+  geom_errorbar(aes(ymin = sap2.df$mean-sap2.df$sd, ymax = sap2.df$mean+sap2.df$sd),
                 width = .2,
                 position = position_dodge(0.3))+
   scale_color_grey(name = "Site")+
@@ -1476,7 +1475,7 @@ sapLP <- sapLP + theme(plot.title = element_text(size = 18, hjust = 0),
               legend.position = c(0.735,0.8),
               text = element_text(family = "Arial"),
               plot.margin = margin(20,20,20,20))+
-  annotate("text", x = c(0.9,1,1.1,1.9,2,2.1,2.9,3,3.1,3.9,4,4.1), 
+  annotate("text", x = c(0.9,1,1.1,1.9,2,2.1,2.9,3,3.1,3.9,4,4.1),
            y = c(12,127,97,68,145,95,80,63,41,30,23,21),
            label = c("A","B","B","A","A","A","A","A","A","A","B","B"), size = 4)+
   annotate("rect", xmin = 0.8, xmax = 1.2, ymin=-5, ymax = 150, alpha = 0.05)+
@@ -1487,6 +1486,6 @@ sapLP <- sapLP + theme(plot.title = element_text(size = 18, hjust = 0),
 sapLP
 
 #PLOT--Tree data wrap#####
-treeWrap <- ggarrange(ggarrange(medianUvBP,seedNBp, nrow = 2, labels = c("A","B")), 
+treeWrap <- ggarrange(ggarrange(medianUvBP,seedNBp, nrow = 2, labels = c("A","B")),
                       ggarrange(sapLP, labels = "C"), widths = c(1,1.3))
 treeWrap
